@@ -1,13 +1,14 @@
 from pathlib import Path
 
 import reapy
+from loguru import logger
 from reapy import reascript_api as rp
 
 
 class NameManager:
 
     def __init__(self):
-        self.filter_list = []
+        self.accept_empty_new_name = False
 
     @reapy.inside_reaper()
     def __get_tracks(self) -> [dict]:
@@ -44,14 +45,16 @@ class NameManager:
             }]
         """
         data = []
-        items = reapy.Project().items
-        for i in items:
-            is_item_selected = i.is_selected
-            take = i.active_take
+        count = rp.CountMediaItems(0)
+        for idx in range(count):
+            item = rp.GetMediaItem(0, idx)
+            take = rp.GetMediaItemTake(item, 0)
+            name = rp.GetTakeName(take)
             take_info = {
                 'take': take,
-                'name': take.name,
-                'is_selected': is_item_selected,
+                'take_id': idx,
+                'name': name,
+                'is_selected': False,
                 'new_name': ''
             }
             data.append(take_info)
@@ -133,13 +136,60 @@ class NameManager:
     def items(self):
         return [i for i in self.__get_takes()]
 
+    def set_region_name(self, search_result):
+        for i in search_result:
+            track = i['region']
+            new_name = i['new_name']
+            # 空白名称判断
+            if not self.accept_empty_new_name and not new_name:
+                continue
+
+    def set_track_name(self, search_result):
+        for i in search_result:
+            track = i['track']
+            new_name = i['new_name']
+            # 空白名称判断
+            if not self.accept_empty_new_name and not new_name:
+                continue
+            track.set_info_string('P_NAME', new_name)
+
+    def set_item_name(self, search_result):
+        for i in search_result:
+            logger.debug(i)
+            take_id = i['take_id']
+            new_name = i['new_name']
+            # 空白名称判断
+            if not self.accept_empty_new_name and not new_name:
+                continue
+
+            item = rp.GetMediaItem(0, take_id)
+            take = rp.GetMediaItemTake(item, 0)
+            rp.GetSetMediaItemTakeInfo_String(take, 'P_NAME', new_name, True)
+            # take.set_info_value('P_NAME', new_name)
+
+    def set_marker_name(self, search_result):
+        for i in search_result:
+            track = i['mark']
+            new_name = i['new_name']
+            # 空白名称判断
+            if not self.accept_empty_new_name and not new_name:
+                continue
+
 
 if __name__ == '__main__':
     mgr = NameManager()
-    print('trackers', mgr.tracks)
-    print('items', mgr.items)
-    print('regions', mgr.regions)
-    print('markers', mgr.markers)
+    # print('trackers', mgr.tracks)
+    # print('items', mgr.items)
+    # print('regions', mgr.regions)
+    # print('markers', mgr.markers)
+    items = reapy.Project().items
+    with reapy.inside_reaper():
+        for i in items:
+            take = i.active_take
+            print(take.id)
+        item = rp.GetMediaItem(0, 0)
+        take = rp.GetMediaItemTake(item, 0)
+        rp.GetSetMediaItemTakeInfo_String(take, 'P_NAME', 'name', True)
 
     # print(mgr.get_regions())
     # path = Path('get_region.py').resolve()

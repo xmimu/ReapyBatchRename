@@ -30,14 +30,17 @@ class App(ft.ListView):
         self.is_match_all_text = False
         self.is_match_regex = False
         self.is_selected_only = False
-        self.current_mode = WorkMode.Region
-        self.filter_list = []
+        self.work_mode = WorkMode.Region
+        self.search_result = []
         # 初始化 UI
         self.create_widgets()
         self.create_layouts()
         self.create_connections()
         # 初始化表格数据
-        self.set_table_data()
+        self.refresh_table()
+        # 隐藏 替换所有的按钮，暂时不实现这个功能 # todo
+        self.btn_replace_all.visible = False
+        self.btn_replace_all.disabled = True
 
     def create_widgets(self):
         def create_table():
@@ -132,6 +135,8 @@ class App(ft.ListView):
         self.switch_match_regex.on_change = self.switch_match_regex_changed
         # 按钮事件
         self.btn_search.on_click = self.btn_search_clicked
+        self.btn_replace.on_click = self.btn_replace_clicked
+        self.btn_replace_all.on_click = self.btn_replace_all_clicked
         # 单选，复选按钮事件
         self.radio_group.on_change = self.radio_group_changed
         self.checkbox_selected_only.on_change = self.checkbox_selected_only_changed
@@ -143,13 +148,13 @@ class App(ft.ListView):
         判断当前模式，获取 reaper 列表资源
         :return: regions, tracks...
         """
-        if self.current_mode == WorkMode.Region:
+        if self.work_mode == WorkMode.Region:
             data = self.manager.regions
-        elif self.current_mode == WorkMode.Track:
+        elif self.work_mode == WorkMode.Track:
             data = self.manager.tracks
-        elif self.current_mode == WorkMode.Item:
+        elif self.work_mode == WorkMode.Item:
             data = self.manager.items
-        elif self.current_mode == WorkMode.Mark:
+        elif self.work_mode == WorkMode.Mark:
             data = self.manager.markers
         else:
             data = []
@@ -178,20 +183,17 @@ class App(ft.ListView):
 
         return rows
 
-    def set_table_data(self):
+    def refresh_table(self):
         """
         判断当前选择模式，更新数据到表格
         :return:
         """
-        ################ 重置当前过滤修改列表 ###############
-        self.filter_list = []
-
-        data = self.__check_manager_data()
-
-        rows = self.__create_table_rows(data)
+        ################ 重置搜索结果 ###############
+        self.search_result = self.__check_manager_data()
 
         # 显示到 table
-        self.table.rows = rows
+        self.table.rows = self.__create_table_rows(self.search_result)
+
         # 如果是初始化状态，update 会报错，而且也不需要 update
         try:
             self.table.update()
@@ -216,51 +218,82 @@ class App(ft.ListView):
         # ################## 查找 ###############################
         # 一个匹配模式都不选择，即 - 包含关系，忽略大小写，不能输入正则表达式
         # search_string.lower() in text.lower()
-        if not (is_match_case and is_match_all_text and is_match_regex):
+        if not is_match_case and not is_match_all_text and not is_match_regex:
             for i in data:
                 if search_string.lower() in i['name'].lower():
+                    new_name = replace_string
+                    i['new_name'] = new_name
+
                     search_result.append(i)
+
         # 三个匹配模式都选择，即 - 非包含关系，区分大小写，可以输入正则表达式和完整字符串
         # re.match(pattern, text)
         elif is_match_case and is_match_all_text and is_match_regex:
             for i in data:
                 if re.match(search_string, i['name']):
+                    new_name = replace_string
+                    i['new_name'] = new_name
+
                     search_result.append(i)
+
         # 只选择第一个，即 - 包含关系，区分大小写，不能输入正则表达式
         # search_string in text
-        elif is_match_case and not (is_match_all_text and is_match_regex):
+        elif is_match_case and not is_match_all_text and not is_match_regex:
             for i in data:
                 if search_string in i['name']:
+                    new_name = replace_string
+                    i['new_name'] = new_name
+
                     search_result.append(i)
+
         # 只选择第二个，即 - 非包含关系，忽略大小写，不能输入正则表达式
         # search_string.lower()  == text.lower()
-        elif is_match_all_text and not (is_match_case and is_match_regex):
+        elif is_match_all_text and not is_match_case and not is_match_regex:
             for i in data:
                 if search_string.lower() == i['name'].lower():
+                    new_name = replace_string
+                    i['new_name'] = new_name
+
                     search_result.append(i)
+
         # 只选第三个，即 - 包含关系，忽略大小写，可以输入正则和字符串片段
         # re.search(search_string, text, re.I)
-        elif is_match_regex and not (is_match_case and is_match_all_text):
+        elif is_match_regex and not is_match_case and not is_match_all_text:
             for i in data:
                 if re.search(search_string, i['name'], re.I):
+                    new_name = replace_string
+                    i['new_name'] = new_name
+
                     search_result.append(i)
+
         # 选择第一个和第二个，即 - 非包含关系，区分大小写，不能输入正则表达式
         # search_string == text
         elif is_match_case and is_match_all_text and not is_match_regex:
             for i in data:
                 if search_string == i['name']:
+                    new_name = replace_string
+                    i['new_name'] = new_name
+
                     search_result.append(i)
+
         # 选择第一个和第三个，即 - 包含关系，区分大小写，可以输入正则
         # re.search(search_string, text)
         elif is_match_case and is_match_regex and not is_match_all_text:
             for i in data:
                 if re.search(search_string, i['name']):
+                    new_name = replace_string
+                    i['new_name'] = new_name
+
                     search_result.append(i)
+
         # 选择第二个和第三个，即 - 非包含关系，忽略大小写，可以输入正则
         # re.match(search_string, text, re.I)
         elif is_match_all_text and is_match_regex and not is_match_case:
             for i in data:
                 if re.match(search_string, i['name'], re.I):
+                    new_name = replace_string
+                    i['new_name'] = new_name
+
                     search_result.append(i)
 
         return search_result
@@ -283,12 +316,19 @@ class App(ft.ListView):
 
     def on_cell_tap(self, e):
         def dialog_edit_submit(dialog_edit_e):
-            e.control.content.value = dialog_edit_e.control.value
+            _value = dialog_edit_e.control.value
+            e.control.content.value = _value
+            # 找到所在位置的行索引
+            for _index, row in enumerate(self.table.rows):
+                if row.cells[2] == e.control:
+                    self.search_result[_index]['new_name'] = _value
+            # 关闭对话框
             self.page.dialog.open = False
             e.control.update()
             self.page.update()
 
         text = e.control.content.value
+
         dialog = ft.AlertDialog(
             title=ft.Text('输入新名称'),
             content=ft.TextField(value=text, autofocus=True, on_submit=dialog_edit_submit),
@@ -303,25 +343,25 @@ class App(ft.ListView):
         self.checkbox_selected_only.update()
 
         if value == '区域':
-            self.current_mode = WorkMode.Region
+            self.work_mode = WorkMode.Region
         elif value == '轨道':
-            self.current_mode = WorkMode.Track
+            self.work_mode = WorkMode.Track
         elif value == '媒体对象':
-            self.current_mode = WorkMode.Item
+            self.work_mode = WorkMode.Item
         elif value == '标记':
-            self.current_mode = WorkMode.Mark
+            self.work_mode = WorkMode.Mark
 
-        self.set_table_data()
+        self.refresh_table()
 
     def checkbox_selected_only_changed(self, e):
         self.is_selected_only = e.control.value
-        self.set_table_data()
+        self.refresh_table()
         self.table.update()
 
     def btn_refresh_clicked(self, e):
-        self.set_table_data()
+        self.refresh_table()
 
-    def btn_clear_clicked(self,e):
+    def btn_clear_clicked(self, e):
         self.edit_search.value = ''
         self.search_string = ''
         self.edit_replace.value = ''
@@ -345,12 +385,34 @@ class App(ft.ListView):
 
         data = self.__check_manager_data()
 
-        self.search_result = self.search_from_data(data)
-        logger.debug(f'查找结果：{self.search_result}')
-
+        # 正则表达式可能会出错
+        try:
+            self.search_result = self.search_from_data(data)
+            logger.debug(f'查找结果：{self.search_result}')
+        except Exception as e:
+            logger.warning(f'可能不正确的表达式: {self.search_string}')
+            logger.warning(e)
+            self.search_result = data
         # 显示搜索结果
         self.table.rows = self.__create_table_rows(self.search_result)
         self.table.update()
+
+    def btn_replace_clicked(self, e):
+        work_mode = self.work_mode
+        if work_mode == WorkMode.Region:
+            self.manager.set_region_name(self.search_result)
+        elif work_mode == WorkMode.Track:
+            self.manager.set_track_name(self.search_result)
+        elif work_mode == WorkMode.Item:
+            self.manager.set_item_name(self.search_result)
+        elif work_mode == WorkMode.Mark:
+            self.manager.set_marker_name(self.search_result)
+
+        # 更新表格
+        self.refresh_table()
+
+    def btn_replace_all_clicked(self, e):
+        pass
 
 
 def main(page: ft.Page):

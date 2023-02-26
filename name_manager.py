@@ -157,6 +157,7 @@ class NameManager:
         ######## 玄学问题，undo block 只在函数里面才有效
         #############################################
         rp.Undo_EndBlock2(0, 'Reapy batch rename tracks', 1)
+        self.refresh_all()
 
     @reapy.inside_reaper()
     def set_item_name(self, search_result):
@@ -177,6 +178,7 @@ class NameManager:
 
         ############ undo block 无法生效
         rp.Undo_EndBlock2(0, 'Reapy batch rename items', 1)
+        self.refresh_all()
 
     def set_marker_name(self, search_result):
         """
@@ -207,6 +209,13 @@ class NameManager:
             )
         # 不能正确显示 undo 信息，但是有效
         rp.Undo_EndBlock2(0, 'Reapy batch rename markers', 1)
+        self.refresh_all()
+
+    @reapy.inside_reaper()
+    def refresh_all(self):
+        # 刷新 layouts
+        rp.ThemeLayout_RefreshAll()
+        rp.DockWindowRefresh()
 
     @reapy.inside_reaper()
     def start_undo(self):

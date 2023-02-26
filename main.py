@@ -10,7 +10,7 @@ class WorkMode(enum.Enum):
     Region = enum.auto()
     Track = enum.auto()
     Item = enum.auto()
-    Mark = enum.auto()
+    Marker = enum.auto()
 
 
 class App(ft.ListView):
@@ -160,7 +160,7 @@ class App(ft.ListView):
             data = self.manager.tracks
         elif self.work_mode == WorkMode.Item:
             data = self.manager.items
-        elif self.work_mode == WorkMode.Mark:
+        elif self.work_mode == WorkMode.Marker:
             data = self.manager.markers
         else:
             data = []
@@ -355,7 +355,7 @@ class App(ft.ListView):
         elif value == '媒体对象':
             self.work_mode = WorkMode.Item
         elif value == '标记':
-            self.work_mode = WorkMode.Mark
+            self.work_mode = WorkMode.Marker
 
         self.refresh_table()
 
@@ -411,7 +411,7 @@ class App(ft.ListView):
             self.manager.set_track_name(self.search_result)
         elif work_mode == WorkMode.Item:
             self.manager.set_item_name(self.search_result)
-        elif work_mode == WorkMode.Mark:
+        elif work_mode == WorkMode.Marker:
             self.manager.set_marker_name(self.search_result)
 
         # 更新表格

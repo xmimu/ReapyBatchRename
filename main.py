@@ -71,7 +71,7 @@ class App(ft.ListView):
         self.btn_replace_all = ft.ElevatedButton(content=ft.Text('替换所有', size=22), width=160)
 
         # Undo Redo button
-        self.btn_undo = ft.IconButton(icon=ft.icons.UNDO,tooltip='Undo')
+        self.btn_undo = ft.IconButton(icon=ft.icons.UNDO, tooltip='Undo')
 
         self.switch_match_case = ft.Switch(label='区分大小写')
         self.switch_match_all_text = ft.Switch(label='全字匹配')
@@ -82,8 +82,8 @@ class App(ft.ListView):
         self.radio_item = ft.Radio(label='媒体对象', value='媒体对象')
         self.radio_marker = ft.Radio(label='标记', value='标记')
 
-        self.btn_refresh = ft.IconButton(icon=ft.icons.REFRESH,tooltip='refresh')
-        self.btn_clear = ft.IconButton(icon=ft.icons.CLEANING_SERVICES_SHARP,tooltip='clear')
+        self.btn_refresh = ft.IconButton(icon=ft.icons.REFRESH, tooltip='refresh')
+        self.btn_clear = ft.IconButton(icon=ft.icons.CLEANING_SERVICES_SHARP, tooltip='clear')
 
     def create_layouts(self):
         head = ft.Column([
@@ -306,10 +306,10 @@ class App(ft.ListView):
 
     # region 事件回调方法
     def edit_search_changed(self, e):
-        self.search_string = self.edit_search.value
+        self.search_string = self.edit_search.value.strip()
 
     def edit_replace_changed(self, e):
-        self.replace_string = self.edit_replace.value
+        self.replace_string = self.edit_replace.value.strip()
 
     def switch_match_case_changed(self, e):
         self.is_match_case = self.switch_match_case.value
@@ -322,15 +322,36 @@ class App(ft.ListView):
 
     def on_cell_tap(self, e):
         def dialog_edit_submit(dialog_edit_e):
-            _value = dialog_edit_e.control.value
-            e.control.content.value = _value
+            _value: str = dialog_edit_e.control.value.strip()
+            # e.control.content.value = _value
+            # 如果包含换行，可以直接更改多行表格
             # 找到所在位置的行索引
             for _index, row in enumerate(self.table.rows):
                 if row.cells[2] == e.control:
-                    self.search_result[_index]['new_name'] = _value
+                    _current_row_index = _index
+                    break
+            else:
+                logger.error('编辑表格的时候，找不到对应的索引！')
+                raise Exception
+            # 按换行拆分
+            _name_list = _value.splitlines()
+            # 根据索引，修改表格
+            for _row_index, _text in enumerate(_name_list):
+                _text = _text.strip()
+                if not _text: continue
+                # 获取当前索引位置
+                _ptr = _current_row_index + _row_index
+                if _ptr >=len(self.search_result):continue
+                # 更改数据
+                self.search_result[_ptr]['new_name'] = _text
+                # 刷新
+                _edit = self.table.rows[_ptr].cells[2].content
+                _edit.value = _text
+                _edit.update()
+
+
             # 关闭对话框
             self.page.dialog.open = False
-            e.control.update()
             self.page.update()
 
         text = e.control.content.value
@@ -372,6 +393,9 @@ class App(ft.ListView):
         self.search_string = ''
         self.edit_replace.value = ''
         self.replace_string = ''
+
+        # 刷新界面
+        self.refresh_table()
         self.page.update()
 
     def btn_search_clicked(self, e):
@@ -420,7 +444,7 @@ class App(ft.ListView):
     def btn_replace_all_clicked(self, e):
         pass
 
-    def btn_undo_clicked(self,e):
+    def btn_undo_clicked(self, e):
         self.manager.do_undo()
         self.refresh_table()
 

@@ -34,27 +34,28 @@ class NameManager:
         return data
 
     @reapy.inside_reaper()
-    def __get_takes(self) -> [dict]:
+    def __get_items(self) -> [dict]:
         """
-        获取 take 信息
+        获取 每个 item 的 active take 信息，记录 item 的索引，选择状态，
+        active take 的名称，
         :return: [{
-                'take': take,
-                'name': take.name,
-                'is_selected': is_item_selected,
-                'new_name':''
+                'item_index': idx,
+                'name': name,
+                'is_selected': is_selected,
+                'new_name': ''
             }]
         """
         data = []
         count = rp.CountMediaItems(0)
         for idx in range(count):
             item = rp.GetMediaItem(0, idx)
-            take = rp.GetMediaItemTake(item, 0)
+            is_selected = rp.IsMediaItemSelected(item)
+            take = rp.GetActiveTake(item)
             name = rp.GetTakeName(take)
             take_info = {
-                'take': take,
-                'take_id': idx,
+                'item_index': idx,
                 'name': name,
-                'is_selected': False,
+                'is_selected': is_selected,
                 'new_name': ''
             }
             data.append(take_info)
@@ -73,21 +74,23 @@ class NameManager:
         rp.SNM_DeleteFastString(fs)
         return name
 
-    def __get_marker_info(self, mark_index) -> dict:
+    def __get_marker_info(self, marker_index) -> dict:
         """
         获取 marker 信息
-        :param mark_index:
+        :param marker_index:
         :return: {
             'marker_index': marker_index,
             'name': name,
             'is_region': is_region,
             'is_marker': not is_region,
             'is_selected': False,
+            'start':start,
+            'end':end,
             'new_name': ''
         }
         """
         (_, _, is_region_out, start, end, _,
-         marker_index) = rp.EnumProjectMarkers(mark_index, 0, 0, 0, 0, 0)
+         marker_index) = rp.EnumProjectMarkers(marker_index, 0, 0, 0, 0, 0)
 
         name = self.__get_marker_name(marker_index, is_region_out)
         is_region = is_region_out == 1
@@ -98,6 +101,8 @@ class NameManager:
             'is_region': is_region,
             'is_marker': not is_region,
             'is_selected': False,
+            'start': start,
+            'end': end,
             'new_name': ''
         }
 
@@ -134,17 +139,12 @@ class NameManager:
 
     @property
     def items(self):
-        return [i for i in self.__get_takes()]
+        return [i for i in self.__get_items()]
 
-    def set_region_name(self, search_result):
-        for i in search_result:
-            track = i['region']
-            new_name = i['new_name']
-            # 空白名称判断
-            if not self.accept_empty_new_name and not new_name:
-                continue
-
+    @reapy.inside_reaper()
     def set_track_name(self, search_result):
+        rp.Undo_BeginBlock2(0)
+
         for i in search_result:
             track = i['track']
             new_name = i['new_name']
@@ -153,27 +153,76 @@ class NameManager:
                 continue
             track.set_info_string('P_NAME', new_name)
 
+        ##############################################
+        ######## 玄学问题，undo block 只在函数里面才有效
+        #############################################
+        rp.Undo_EndBlock2(0, 'Reapy batch rename tracks', 1)
+
+    @reapy.inside_reaper()
     def set_item_name(self, search_result):
+        rp.Undo_BeginBlock2(0)
+
         for i in search_result:
             logger.debug(i)
-            take_id = i['take_id']
+            item_id = i['item_index']
             new_name = i['new_name']
             # 空白名称判断
             if not self.accept_empty_new_name and not new_name:
                 continue
 
-            item = rp.GetMediaItem(0, take_id)
-            take = rp.GetMediaItemTake(item, 0)
+            item = rp.GetMediaItem(0, item_id)
+            # take = rp.GetMediaItemTake(item, 0)
+            take = rp.GetActiveTake(item)
             rp.GetSetMediaItemTakeInfo_String(take, 'P_NAME', new_name, True)
-            # take.set_info_value('P_NAME', new_name)
+
+        ############ undo block 无法生效
+        rp.Undo_EndBlock2(0, 'Reapy batch rename items', 1)
 
     def set_marker_name(self, search_result):
+        """
+        设置 region 或者 mark 名称
+        :param search_result: [{
+            'marker_index': marker_index,
+            'name': name,
+            'is_region': is_region,
+            'is_marker': not is_region,
+            'is_selected': False,
+            'start':start,
+            'end':end,
+            'new_name': ''
+        }]
+        :return:
+        """
+        rp.Undo_BeginBlock2(0)
+
         for i in search_result:
-            track = i['mark']
             new_name = i['new_name']
             # 空白名称判断
             if not self.accept_empty_new_name and not new_name:
                 continue
+
+            rp.SetProjectMarker(
+                i['marker_index'], i['is_region'],
+                i['start'], i['end'], i['new_name']
+            )
+        # 不能正确显示 undo 信息，但是有效
+        rp.Undo_EndBlock2(0, 'Reapy batch rename markers', 1)
+
+    @reapy.inside_reaper()
+    def start_undo(self):
+        rp.Undo_BeginBlock2(0)
+
+    @reapy.inside_reaper()
+    def end_undo(self, msg: str):
+        logger.debug(msg)
+        # 设置 extraflags 为 1可以正常显示
+        rp.Undo_EndBlock2(0, msg, 0)
+
+    @reapy.inside_reaper()
+    def do_undo(self):
+        rp.Undo_DoUndo2(0)
+        self.end_undo('Reapy Undo') # 反正不加 reaper 会卡...
+        logger.debug('Do undo 2')
 
 
 if __name__ == '__main__':
@@ -182,14 +231,6 @@ if __name__ == '__main__':
     # print('items', mgr.items)
     # print('regions', mgr.regions)
     # print('markers', mgr.markers)
-    items = reapy.Project().items
-    with reapy.inside_reaper():
-        for i in items:
-            take = i.active_take
-            print(take.id)
-        item = rp.GetMediaItem(0, 0)
-        take = rp.GetMediaItemTake(item, 0)
-        rp.GetSetMediaItemTakeInfo_String(take, 'P_NAME', 'name', True)
 
     # print(mgr.get_regions())
     # path = Path('get_region.py').resolve()

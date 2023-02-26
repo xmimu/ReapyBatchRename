@@ -70,6 +70,9 @@ class App(ft.ListView):
         self.btn_replace = ft.ElevatedButton(content=ft.Text('替换', size=22), width=160)
         self.btn_replace_all = ft.ElevatedButton(content=ft.Text('替换所有', size=22), width=160)
 
+        # Undo Redo button
+        self.btn_undo = ft.IconButton(icon=ft.icons.UNDO,tooltip='Undo')
+
         self.switch_match_case = ft.Switch(label='区分大小写')
         self.switch_match_all_text = ft.Switch(label='全字匹配')
         self.switch_match_regex = ft.Switch(label='使用正则表达式')
@@ -79,8 +82,8 @@ class App(ft.ListView):
         self.radio_item = ft.Radio(label='媒体对象', value='媒体对象')
         self.radio_marker = ft.Radio(label='标记', value='标记')
 
-        self.btn_refresh = ft.IconButton(icon=ft.icons.REFRESH)
-        self.btn_clear = ft.IconButton(icon=ft.icons.CLEANING_SERVICES_SHARP)
+        self.btn_refresh = ft.IconButton(icon=ft.icons.REFRESH,tooltip='refresh')
+        self.btn_clear = ft.IconButton(icon=ft.icons.CLEANING_SERVICES_SHARP,tooltip='clear')
 
     def create_layouts(self):
         head = ft.Column([
@@ -97,7 +100,9 @@ class App(ft.ListView):
                 self.btn_search,
                 ft.Container(width=50),
                 self.btn_replace,
-                self.btn_replace_all
+                self.btn_replace_all,
+                ft.Container(width=30),
+                self.btn_undo
             ])
         ], spacing=20)
 
@@ -136,7 +141,8 @@ class App(ft.ListView):
         # 按钮事件
         self.btn_search.on_click = self.btn_search_clicked
         self.btn_replace.on_click = self.btn_replace_clicked
-        self.btn_replace_all.on_click = self.btn_replace_all_clicked
+        # self.btn_replace_all.on_click = self.btn_replace_all_clicked
+        self.btn_undo.on_click = self.btn_undo_clicked
         # 单选，复选按钮事件
         self.radio_group.on_change = self.radio_group_changed
         self.checkbox_selected_only.on_change = self.checkbox_selected_only_changed
@@ -400,7 +406,7 @@ class App(ft.ListView):
     def btn_replace_clicked(self, e):
         work_mode = self.work_mode
         if work_mode == WorkMode.Region:
-            self.manager.set_region_name(self.search_result)
+            self.manager.set_marker_name(self.search_result)
         elif work_mode == WorkMode.Track:
             self.manager.set_track_name(self.search_result)
         elif work_mode == WorkMode.Item:
@@ -414,13 +420,17 @@ class App(ft.ListView):
     def btn_replace_all_clicked(self, e):
         pass
 
+    def btn_undo_clicked(self,e):
+        self.manager.do_undo()
+        self.refresh_table()
+
 
 def main(page: ft.Page):
     page.title = 'ReapyBatchRename'
     page.window_width = 800
     page.window_height = 800
-    page.window_left = 400
-    page.window_top = 200
+    page.window_left = 200
+    page.window_top = 50
     # page.window_center()
     manager = NameManager()
     app = App(page, manager)

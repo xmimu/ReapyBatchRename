@@ -156,7 +156,7 @@ class NameManager:
         ##############################################
         ######## 玄学问题，undo block 只在函数里面才有效
         #############################################
-        rp.Undo_EndBlock2(0, 'Reapy batch rename tracks', 1)
+        rp.Undo_EndBlock2(0, 'Reapy batch rename tracks', -1)
         self.refresh_all()
 
     @reapy.inside_reaper()
@@ -177,9 +177,10 @@ class NameManager:
             rp.GetSetMediaItemTakeInfo_String(take, 'P_NAME', new_name, True)
 
         ############ undo block 无法生效
-        rp.Undo_EndBlock2(0, 'Reapy batch rename items', 1)
+        rp.Undo_EndBlock2(0, 'Reapy batch rename items', -1)
         self.refresh_all()
 
+    @reapy.inside_reaper()
     def set_marker_name(self, search_result):
         """
         设置 region 或者 mark 名称
@@ -208,14 +209,15 @@ class NameManager:
                 i['start'], i['end'], i['new_name']
             )
         # 不能正确显示 undo 信息，但是有效
-        rp.Undo_EndBlock2(0, 'Reapy batch rename markers', 1)
+        rp.Undo_EndBlock2(0, 'Reapy batch rename markers', -1)
         self.refresh_all()
 
     @reapy.inside_reaper()
     def refresh_all(self):
         # 刷新 layouts
-        rp.ThemeLayout_RefreshAll()
-        rp.DockWindowRefresh()
+        # rp.ThemeLayout_RefreshAll()
+        # rp.DockWindowRefresh()
+        reapy.get_main_window().refresh()
 
     @reapy.inside_reaper()
     def start_undo(self):
@@ -225,12 +227,11 @@ class NameManager:
     def end_undo(self, msg: str):
         logger.debug(msg)
         # 设置 extraflags 为 1可以正常显示
-        rp.Undo_EndBlock2(0, msg, 0)
+        rp.Undo_EndBlock2(0, msg, -1)
 
     @reapy.inside_reaper()
     def do_undo(self):
         rp.Undo_DoUndo2(0)
-        self.end_undo('Reapy Undo') # 反正不加 reaper 会卡...
         logger.debug('Do undo 2')
 
 

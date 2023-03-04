@@ -285,19 +285,26 @@ class App(ft.ListView):
         # re.match(pattern, text)
         elif is_match_case and is_match_all_text and is_match_regex:
             for i in data:
-                if re.match(search_string, i['name']):
+                if match_result := re.match(search_string, i['name']):
                     i['new_name'] = self.__parse_replace_wildcard(
-                        len(search_result), i['name'], replace_string)
+                        len(search_result), i['name'],
+                        replace_string, match_result.groups())
 
                     search_result.append(i)
 
         # 只选择第一个，即 - 包含关系，区分大小写，不能输入正则表达式
         # search_string in text
         elif is_match_case and not is_match_all_text and not is_match_regex:
-            # 如果包含 * ? 则使用类似通配符的匹配，通过替换成正则实现
             if is_glob:
+                # 如果包含 * ? 则使用类似通配符的匹配，通过替换成正则实现
                 search_string = search_string.replace('?', '.').replace('*', '.*')
+                # 去掉通配符字符剩下的字符串，判断是否大小写匹配
+                clean_words = re.findall(r'[^\.\*\-\[\]\?]*',search_string)
+
                 for i in data:
+                    for word in clean_words:
+                        if not word in i['name']: continue
+
                     if re.search(search_string, i['name']):
                         i['new_name'] = self.__parse_replace_wildcard(
                             len(search_result), i['name'], replace_string)
@@ -325,9 +332,10 @@ class App(ft.ListView):
         # re.search(search_string, text, re.I)
         elif is_match_regex and not is_match_case and not is_match_all_text:
             for i in data:
-                if re.search(search_string, i['name'], re.I):
+                if match_result := re.search(search_string, i['name'], re.I):
                     i['new_name'] = self.__parse_replace_wildcard(
-                        len(search_result), i['name'], replace_string)
+                        len(search_result), i['name'],
+                        replace_string, match_result.groups())
 
                     search_result.append(i)
 
@@ -345,9 +353,10 @@ class App(ft.ListView):
         # re.search(search_string, text)
         elif is_match_case and is_match_regex and not is_match_all_text:
             for i in data:
-                if re.search(search_string, i['name']):
+                if match_result:= re.search(search_string, i['name']):
                     i['new_name'] = self.__parse_replace_wildcard(
-                        len(search_result), i['name'], replace_string)
+                        len(search_result), i['name'],
+                        replace_string, match_result.groups())
 
                     search_result.append(i)
 
@@ -355,9 +364,10 @@ class App(ft.ListView):
         # re.match(search_string, text, re.I)
         elif is_match_all_text and is_match_regex and not is_match_case:
             for i in data:
-                if re.match(search_string, i['name'], re.I):
+                if match_result:=re.match(search_string, i['name'], re.I):
                     i['new_name'] = self.__parse_replace_wildcard(
-                        len(search_result), i['name'], replace_string)
+                        len(search_result), i['name'],
+                        replace_string, match_result.groups())
 
                     search_result.append(i)
 
@@ -476,7 +486,7 @@ class App(ft.ListView):
         # 正则表达式可能会出错
         try:
             self.search_result = self.search_from_data(data)
-            logger.debug(f'查找结果：{self.search_result}')
+            # logger.debug(f'查找结果：{self.search_result}')
         except Exception as e:
             logger.warning(f'可能不正确的表达式: {self.search_string}')
             logger.warning(e)

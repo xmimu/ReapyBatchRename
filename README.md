@@ -53,7 +53,7 @@
 
   - "#\_A"  - 表示转为首字母大写，"#\_a"  - 表示转为首字母小写。
 
-    <img src="C:\Users\11015\AppData\Roaming\Typora\typora-user-images\image-20230304192034239.png" alt="image-20230304192034239" style="zoom: 80%;" />
+    <img src="D:\PycharmProjects\ReapyBatchRename\images\大小写转换" alt="image-20230304192034239" style="zoom: 80%;" />
 
 - 新增针对正则表达式 group 的替换实现。
 
@@ -61,6 +61,6 @@
 
   - ~~\ 加数字 - 用于删除正则表达式group捕获到的值，把删除之后的内容替换到新名称。~~
 
-    <img src="C:\Users\11015\AppData\Roaming\Typora\typora-user-images\image-20230304192730574.png" alt="image-20230304192730574" style="zoom:80%;" />
+    <img src="D:\PycharmProjects\ReapyBatchRename\images\正则替换.png" alt="image-20230304192730574" style="zoom:80%;" />
 
     

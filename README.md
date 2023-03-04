@@ -53,7 +53,7 @@
 
   - "#\_A"  - 表示转为首字母大写，"#\_a"  - 表示转为首字母小写。
 
-    <img src="D:\PycharmProjects\ReapyBatchRename\images\大小写转换" alt="image-20230304192034239" style="zoom: 80%;" />
+    <img src="https://github.com/xmimu/ReapyBatchRename/blob/master/images/%E5%A4%A7%E5%B0%8F%E5%86%99%E8%BD%AC%E6%8D%A2.png" alt="通配符-大小写转换" style="zoom: 80%;" />
 
 - 新增针对正则表达式 group 的替换实现。
 
@@ -61,6 +61,6 @@
 
   - ~~\ 加数字 - 用于删除正则表达式group捕获到的值，把删除之后的内容替换到新名称。~~
 
-    <img src="D:\PycharmProjects\ReapyBatchRename\images\正则替换.png" alt="image-20230304192730574" style="zoom:80%;" />
+    <img src="https://github.com/xmimu/ReapyBatchRename/blob/master/images/%E6%AD%A3%E5%88%99%E6%9B%BF%E6%8D%A2.png" alt="通配符-正则group替换" style="zoom:80%;" />
 
     

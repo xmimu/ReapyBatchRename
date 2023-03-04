@@ -8,10 +8,28 @@ class ReaperWildCardHelper:
     @staticmethod
     def is_valid(text: str) -> bool:
         for k, v in ReaperWildCardHelper.__dict__.items():  # type:str,object
-            if not isinstance(v,str) or not v.startswith('$'): continue
+            if not isinstance(v, str) or not v.startswith('$'): continue
             if v == text:
                 return True
         return False
+
+    @staticmethod
+    def parse(match_count, current_name, new_name, replace_string) -> str:
+        # 判断 替换输入字符，只要包含 $ 加字符串，就认为是 reaper 通配符
+        groups = re.findall(r'\$\w+', replace_string)
+        for wildcard in groups:
+            if not ReaperWildCardHelper.is_valid(wildcard): continue
+            wildcard_value = ReaperWildCardHelper.get_wildcard_value(wildcard)
+            new_name.replace(wildcard, wildcard_value)
+
+        return new_name
+
+    @staticmethod
+    def get_wildcard_value(wildcard: str):
+        if wildcard == ReaperWildCardHelper.Project:
+            pass
+        elif wildcard == ReaperWildCardHelper.Item:
+            pass
 
 
 class WildcardHelper:
@@ -78,12 +96,7 @@ class WildcardHelper:
 
     @staticmethod
     def parse_reaper_wildcard(match_count, current_name, new_name, replace_string) -> str:
-        # 判断 替换输入字符，只要包含 $ 加字符串，就认为是 reaper 通配符
-        groups = re.findall(r'\$\w+', replace_string)
-        for i in groups:
-            ReaperWildCardHelper.is_valid(i)
-
-        return new_name
+        ReaperWildCardHelper.parse(match_count, current_name, new_name, replace_string)
 
     @staticmethod
     def parse_custom_wildcard(match_count, current_name, new_name, replace_string) -> str:
@@ -111,18 +124,17 @@ class WildcardHelper:
         # "#A" 表示转为大写，"#a" 表示转为小写
         # "#_A" 表示转为首字母大写，"#_a" 表示转为首字母小写
         if re.match('#A', replace_string):
-            new_name = new_name.replace('#A','').upper()
+            new_name = new_name.replace('#A', '').upper()
         elif re.match('#a', replace_string):
-            new_name = new_name.replace('#a','').lower()
+            new_name = new_name.replace('#a', '').lower()
         elif re.match('#_A', replace_string):
-            new_name = new_name.replace('#_A','')
+            new_name = new_name.replace('#_A', '')
             new_name = new_name[0].upper() + new_name[1:]
         elif re.match('#_a', replace_string):
-            new_name = new_name.replace('#_a','')
+            new_name = new_name.replace('#_a', '')
             new_name = new_name[0].lower() + new_name[1:]
 
         return new_name
-
 
 
 if __name__ == '__main__':

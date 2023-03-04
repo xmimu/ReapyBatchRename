@@ -96,7 +96,7 @@ class WildcardHelper:
 
     @staticmethod
     def parse_reaper_wildcard(match_count, current_name, new_name, replace_string) -> str:
-        ReaperWildCardHelper.parse(match_count, current_name, new_name, replace_string)
+        return ReaperWildCardHelper.parse(match_count, current_name, new_name, replace_string)
 
     @staticmethod
     def parse_custom_wildcard(match_count, current_name, new_name, replace_string) -> str:
